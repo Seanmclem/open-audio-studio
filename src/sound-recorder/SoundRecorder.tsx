@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components'
 import { StatusList } from './components/StatusList';
 import { StatusItem } from './components/StatusItem';
@@ -14,27 +14,28 @@ const RecordButton = styled.button`
 `
 
 export const SoundRecorder = () => {
+    const [currentlyRecording, setCurrentlyRecording] = useState(false);
 
     const startRecording = async () => {
-        const hat = new Recording;
+        const hat = new Recording({ setCurrentlyRecording });
     }
 
     return (
         <Container>
-            {/* <StatusList>
+            <StatusList>
                 <StatusItem
                     title="recording"
-                    status="in-progress"
+                    status={currentlyRecording ? 'in-progress' : 'not-started'}
                 />
-                <StatusItem
+                {/* <StatusItem
                     title="recording started"
                     status="success"
                 />
                 <StatusItem
                     title="recording stopped"
                     status="not-started"
-                />
-            </StatusList> */}
+                /> */}
+            </StatusList>
             <RecordButton onClick={startRecording}>
                 Record
             </RecordButton>

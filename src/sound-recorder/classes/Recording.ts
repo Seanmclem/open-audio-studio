@@ -1,46 +1,58 @@
+import { Dispatch, SetStateAction } from "react"
+
+interface IRecording {
+    setCurrentlyRecording: Dispatch<SetStateAction<boolean>>
+}
+
 export class Recording {
     chunks: Blob[] = []
+    setCurrentlyRecording: Dispatch<SetStateAction<boolean>>
 
-    constructor() {
+    constructor({ setCurrentlyRecording }: IRecording) {
         this.startRecording()
+        this.setCurrentlyRecording = setCurrentlyRecording
     }
 
     startRecording = async () => {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: true
-            })
-            console.log("Started?")
-            const mediaRecorder = new MediaRecorder(stream)
-            mediaRecorder.start()
-            console.log('mediaRecorder.state:', mediaRecorder.state) //"recording"
-
-            mediaRecorder.ondataavailable = (event: BlobEvent) => {
-                this.chunks.push(event.data);
-            }
-
-            mediaRecorder.onstop = (_event: Event) => {
-                console.log('chunk(s) final', this.chunks)
-                stream.getTracks().forEach(track => track.stop());
-                const blob = new Blob(
-                    this.chunks,
-                    { 'type': 'audio/ogg; codecs=opus' }
-                );
-                this.chunks = [];
-                const audioURL = window.URL.createObjectURL(blob);
-
-                this.createAudioElement(audioURL);
-                console.log('audioURL', audioURL)
-            }
-
-            setTimeout(() => {
-                console.log("stopping...")
-                mediaRecorder.stop();
-                console.log("mediaRecorder.state", mediaRecorder.state);
-            }, 4000)
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            this.registerEventHandlers(mediaRecorder, stream);
+            mediaRecorder.start();
+            this.setTimeLimit(mediaRecorder, 5);
         } else {
             console.log('getUserMedia not supported on your browser!')
         }
+    }
+
+    registerEventHandlers(mediaRecorder: MediaRecorder, stream: MediaStream) {
+        mediaRecorder.ondataavailable = (event: BlobEvent) => {
+            this.chunks.push(event.data);
+        }
+        mediaRecorder.onstart = (event: Event) => {
+            this.setCurrentlyRecording(true);
+        }
+        mediaRecorder.onstop = (_event: Event) => {
+            this.cleanup(stream);
+            const blob = new Blob(
+                this.chunks,
+                { 'type': 'audio/ogg; codecs=opus' }
+            );
+            const audioURL = window.URL.createObjectURL(blob);
+            this.createAudioElement(audioURL);
+        }
+    }
+
+    setTimeLimit(mediaRecorder: MediaRecorder, secondsLimit: number) {
+        setTimeout(() => {
+            mediaRecorder.stop();
+        }, secondsLimit * 1000)
+    }
+
+    cleanup(stream: MediaStream) {
+        this.setCurrentlyRecording(false);
+        stream.getTracks().forEach(track => track.stop());
+        this.chunks = [];
     }
 
     createAudioElement(blobUrl: string) {
