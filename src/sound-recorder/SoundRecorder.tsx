@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components'
 import { StatusList } from './components/StatusList';
 import { StatusItem } from './components/StatusItem';
@@ -15,10 +15,15 @@ const RecordButton = styled.button`
 
 export const SoundRecorder = () => {
     const [currentlyRecording, setCurrentlyRecording] = useState(false);
+    const [timeElapsed, setTimeElapsed] = useState(0);
 
-    const startRecording = async () => {
-        const hat = new Recording({ setCurrentlyRecording });
-    }
+    useEffect(() => {
+        console.log('timeElapsed', timeElapsed)
+    }, [timeElapsed])
+
+    const startRecording = useCallback(() => {
+        new Recording({ setCurrentlyRecording, setTimeElapsed });
+    }, [])
 
     return (
         <Container>
