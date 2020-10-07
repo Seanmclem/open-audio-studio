@@ -42,6 +42,9 @@ export const SoundRecorder = () => {
                     status="not-started"
                 /> */}
             </StatusList>
+            <div>
+                Time: {`${(timeElapsed / 1000).toFixed(1)}/${secondsLimit}`}
+            </div>
             <RecordButton onClick={startRecording}>
                 Record
             </RecordButton>
