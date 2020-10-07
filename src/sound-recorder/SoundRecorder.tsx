@@ -16,13 +16,14 @@ const RecordButton = styled.button`
 export const SoundRecorder = () => {
     const [currentlyRecording, setCurrentlyRecording] = useState(false);
     const [timeElapsed, setTimeElapsed] = useState(0);
+    const secondsLimit = 6;
 
     useEffect(() => {
         console.log('timeElapsed', timeElapsed)
     }, [timeElapsed])
 
     const startRecording = useCallback(() => {
-        new Recording({ setCurrentlyRecording, setTimeElapsed });
+        new Recording({ setCurrentlyRecording, setTimeElapsed, secondsLimit });
     }, [])
 
     return (

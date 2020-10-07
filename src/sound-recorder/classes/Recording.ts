@@ -1,8 +1,10 @@
 import { Dispatch, SetStateAction } from "react"
+import getBlobDuration from "get-blob-duration"
 
 interface IRecording {
     setCurrentlyRecording: Dispatch<SetStateAction<boolean>>;
     setTimeElapsed: Dispatch<SetStateAction<number>>;
+    secondsLimit: number;
 }
 
 export class Recording {
@@ -12,10 +14,12 @@ export class Recording {
     chunks: Blob[] = []
     setCurrentlyRecording: Dispatch<SetStateAction<boolean>>
     setTimeElapsed: Dispatch<SetStateAction<number>>
+    secondsLimit: number
 
-    constructor({ setCurrentlyRecording, setTimeElapsed }: IRecording) {
+    constructor({ setCurrentlyRecording, setTimeElapsed, secondsLimit }: IRecording) {
         this.setCurrentlyRecording = setCurrentlyRecording
         this.setTimeElapsed = setTimeElapsed
+        this.secondsLimit = secondsLimit
         this.startRecording()
     }
 
@@ -36,8 +40,7 @@ export class Recording {
         }
         mediaRecorder.onstart = (_event: Event) => {
             this.setCurrentlyRecording(true);
-            this.trackTimeElapsed();
-            this.setTimeLimit(mediaRecorder, 5);
+            this.trackTimeElapsed(mediaRecorder, this.secondsLimit);
         }
         mediaRecorder.onstop = (_event: Event) => {
             const blob = new Blob(
@@ -46,11 +49,17 @@ export class Recording {
             );
             const audioURL = window.URL.createObjectURL(blob);
             this.createAudioElement(audioURL);
+            this.getDuration(blob)
             this.cleanup(stream);
         }
     }
 
-    trackTimeElapsed() { // short by ~300ms?
+    async getDuration(blob: Blob) {
+        const duration = await getBlobDuration(blob)
+        console.log('duration', duration)
+    }
+
+    trackTimeElapsed(mediaRecorder: MediaRecorder, secondsLimit: number) { // short by ~300ms?
         // NOTES
         // Well, fuck the timeout, do the date thing?
         // Then, or instead, just try and get the duration from the recording data.
@@ -58,19 +67,21 @@ export class Recording {
 
         // revelation: you can track multiple date-time-stamps/can-be-paused-date-timing
         // ^ by using an array of {on/off} timeestamps and combining their differences
-        this.timeElapsedTimeout = setTimeout(() => {
-            this.timeElapsed = this.timeElapsed + 100;
-            this.setTimeElapsed(this.timeElapsed);
-            this.trackTimeElapsed();
-        }, 100)
-    }
+        // ...went with a better timeout for now
 
-    setTimeLimit(mediaRecorder: MediaRecorder, secondsLimit: number) {
-        this.recordingTimeout = setTimeout(() => {
-            mediaRecorder.stop();
-            clearTimeout(this.recordingTimeout); // move to onstop?
-            clearTimeout(this.timeElapsedTimeout);
-        }, secondsLimit * 1000)
+        const incerement = 100;
+
+        this.timeElapsedTimeout = setTimeout(() => {
+            this.timeElapsed = this.timeElapsed + incerement;
+            this.setTimeElapsed(this.timeElapsed);
+
+            if (this.timeElapsed >= (secondsLimit * 1000)) {
+                mediaRecorder.stop();
+                clearTimeout(this.timeElapsedTimeout);
+            } else {
+                this.trackTimeElapsed(mediaRecorder, secondsLimit);
+            }
+        }, incerement)
     }
 
     cleanup(stream: MediaStream) {
