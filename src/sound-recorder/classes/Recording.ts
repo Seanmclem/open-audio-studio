@@ -14,9 +14,9 @@ export class Recording {
     setTimeElapsed: Dispatch<SetStateAction<number>>
 
     constructor({ setCurrentlyRecording, setTimeElapsed }: IRecording) {
-        this.startRecording()
         this.setCurrentlyRecording = setCurrentlyRecording
         this.setTimeElapsed = setTimeElapsed
+        this.startRecording()
     }
 
     startRecording = async () => {
@@ -40,13 +40,13 @@ export class Recording {
             this.setTimeLimit(mediaRecorder, 5);
         }
         mediaRecorder.onstop = (_event: Event) => {
-            this.cleanup(stream);
             const blob = new Blob(
                 this.chunks,
                 { 'type': 'audio/ogg; codecs=opus' }
             );
             const audioURL = window.URL.createObjectURL(blob);
             this.createAudioElement(audioURL);
+            this.cleanup(stream);
         }
     }
 
